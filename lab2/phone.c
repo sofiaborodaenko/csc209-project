@@ -1,4 +1,5 @@
 #include <stdio.h>
+
 #include <stdlib.h>
 
 /*
@@ -12,6 +13,19 @@ to stdout and returns 1.
 
  */
 int main() {
+    char phone[11];
+    int index;
+
+    scanf("%10s %d", phone, &index);
+
+    if (index == -1) {
+        printf("%s\n", phone);
+    } else if (index >= 0 && index <= 9) {
+        printf("%c\n", phone[index]);
+    } else {
+      printf("ERROR\n");
+    }
+
     return 0;
 }
 

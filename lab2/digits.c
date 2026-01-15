@@ -14,7 +14,22 @@
 int repeated_digits(int *numbers, int length) {
     // TODO complete the function according to its description
     // remember to change the return value.
-   return -9;
+   
+    if (numbers == NULL || length < 1) {
+    	return -1;
+    } else {
+	int count[length] = {0};
+	int duplicates = 0;
+
+        for (int i = 0; i < length; i++) {
+	   count[numbers[i]]++;
+	   if (count[numbers[i]] == 2) {
+ 	      duplicates += 1;
+	   }
+	}
+
+	return duplicates;
+    }
 }
 
 /* 

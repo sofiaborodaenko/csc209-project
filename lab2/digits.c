@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +19,7 @@ int repeated_digits(int *numbers, int length) {
     if (numbers == NULL || length < 1) {
     	return -1;
     } else {
-	int count[length] = {0};
+	int count[10] = {0};
 	int duplicates = 0;
 
         for (int i = 0; i < length; i++) {
@@ -49,6 +50,19 @@ int repeated_digits(int *numbers, int length) {
  */
 void leave_repeated_digits(int *numbers, int *length) {
     // TODO complete the function according to its description
+     int count[10] = {0};
+     int write = 0;
+
+     for (int i = 0; i < *length; i++){
+	count[numbers[i]]++;
+	if (count[numbers[i]] == 2) {
+            numbers[write] = numbers[i];
+	    write++;
+	}
+     }
+
+     *length = write;
+
 }
 
 

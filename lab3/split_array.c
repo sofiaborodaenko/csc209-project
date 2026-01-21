@@ -17,34 +17,30 @@ int **split_array(const int *s, int length) {
 		twoDArr[0] = NULL;
 		twoDArr[1] = NULL;
 		return twoDArr;
-	} else if (length == 1) {
-		twoDArr[0] = malloc(sizeof(int));
-		twoDArr[1] = NULL;	
-		twoDArr[0][0] = s[0];
-		return twoDArr;
-	} else {
-		if (length % 2 == 0) {
-			twoDArr[0] = malloc(sizeof(int) * (length/2));
-			twoDArr[1] = malloc(sizeof(int) * (length/2));
-			
-		} else {
-			twoDArr[0] = malloc(sizeof(int) * ((length/2) + 1));
-			twoDArr[1] = malloc(sizeof(int) * (length/2));
-		}	
-		
-		int i0 = 0;
-                int i1 = 0;
-                for (int i = 0; i < length; i++) {
-                	if (i % 2 == 0) {
-            	            twoDArr[0][i0] = s[i];
-                            i0++;
-                        } else{
-                            twoDArr[1][i1] = s[i];
-                            i1++;
-                        }
+	} 
 
-		}
+	int odd_size = length / 2;
+	int even_size = (length + 1) / 2;
+
+		
+	twoDArr[0] = malloc(sizeof(int) * even_size);
+	twoDArr[1] = malloc(sizeof(int) * odd_size);	
+	
+	int i0 = 0;
+        int i1 = 0;
+        
+	for (int i = 0; i < length; i++) {
+        	if (i % 2 == 0) {
+            		twoDArr[0][i0] = s[i];
+                        i0++;
+                } else{
+                        twoDArr[1][i1] = s[i];
+                        i1++;
+                 }
+
 	}
+	
+	return twoDArr;
 
 }
 
@@ -55,10 +51,10 @@ int **split_array(const int *s, int length) {
  */
 
 int *build_array(char **strs, int size) {
-	char *arr_int = malloc(sizeof(char) * size);
+	int *arr_int = malloc(sizeof(int) * size);
 	
 	for (int i = 0; i < size; i++) {
-		arr_int[i] = strtol(*strs[i], NULL, 10);
+		arr_int[i] = strtol(strs[i], NULL, 10);
 	}
 
 	return arr_int;
@@ -71,8 +67,8 @@ int main(int argc, char **argv) {
        arguments.  Do not add any additional lines of code to the main
        function or make other changes.
      */
-    int *full_array = build_array(/* fill in the arguments*/);
-    int **result = split_array(full_array, /* fill in this argument */);
+    int *full_array = build_array(&argv[1], argc - 1);
+    int **result = split_array(full_array, argc - 1);
 
     printf("Original array:\n");
     for (int i = 0; i < argc - 1; i++) {

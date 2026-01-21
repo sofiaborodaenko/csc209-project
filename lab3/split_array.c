@@ -11,7 +11,40 @@
    division.
 */
 int **split_array(const int *s, int length) {
+	int **twoDArr = malloc(sizeof(int*) * 2);
 
+	if (length == 0) {
+		twoDArr[0] = NULL;
+		twoDArr[1] = NULL;
+		return twoDArr;
+	} else if (length == 1) {
+		twoDArr[0] = malloc(sizeof(int));
+		twoDArr[1] = NULL;	
+		twoDArr[0][0] = s[0];
+		return twoDArr;
+	} else {
+		if (length % 2 == 0) {
+			twoDArr[0] = malloc(sizeof(int) * (length/2));
+			twoDArr[1] = malloc(sizeof(int) * (length/2));
+			
+		} else {
+			twoDArr[0] = malloc(sizeof(int) * ((length/2) + 1));
+			twoDArr[1] = malloc(sizeof(int) * (length/2));
+		}	
+		
+		int i0 = 0;
+                int i1 = 0;
+                for (int i = 0; i < length; i++) {
+                	if (i % 2 == 0) {
+            	            twoDArr[0][i0] = s[i];
+                            i0++;
+                        } else{
+                            twoDArr[1][i1] = s[i];
+                            i1++;
+                        }
+
+		}
+	}
 
 }
 
@@ -22,7 +55,13 @@ int **split_array(const int *s, int length) {
  */
 
 int *build_array(char **strs, int size) {
+	char *arr_int = malloc(sizeof(char) * size);
+	
+	for (int i = 0; i < size; i++) {
+		arr_int[i] = strtol(*strs[i], NULL, 10);
+	}
 
+	return arr_int;
 
 }
 

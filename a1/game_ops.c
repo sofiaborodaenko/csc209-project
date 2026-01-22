@@ -19,8 +19,17 @@
  * not read any moves.
  */
 void read_board(FILE *fp, int board[][MAX_SIZE], int *rows, int *cols) {
-    // TODO: Read rows and cols from first line
-    // TODO: Read the board values into the 2D array board
+    
+    fscanf(fp, "%d %d", rows, cols);
+    
+    for (int i = 0; i < *rows; i++){
+         for (int j = 0; j < *cols; j++) {
+              fscanf(fp, "%d", &board[i][j]);
+              
+         }
+
+    }
+
 }
 
 /**
@@ -28,7 +37,15 @@ void read_board(FILE *fp, int board[][MAX_SIZE], int *rows, int *cols) {
  * rows and cols are the dimensions of the array.
  */
 void initialize_visible(int visible[][MAX_SIZE], int rows, int cols) {
-    // TODO: Implement this function.
+    
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            visible[i][j] = 0;
+
+        }
+
+    }
+
 }
 
 /**
@@ -83,7 +100,29 @@ void reveal_cell(int board[][MAX_SIZE], int visible[][MAX_SIZE],
  */
 void print_board(int board[][MAX_SIZE], int visible[][MAX_SIZE], 
                  int rows, int cols) {
-    // TODO: Implement this function
+    
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (visible[i][j] == 1 && board[i][j] == -1) {
+                printf("M ");
+ 
+            }
+            else if (visible[i][j] == 1) {
+                printf("%d ", board[i][j]);
+            }
+
+            else {
+                printf(". ");
+            }
+
+
+        }
+     
+         printf("\n"); 
+    }
+
+
+
 }
 
 /**
@@ -95,6 +134,26 @@ void print_board(int board[][MAX_SIZE], int visible[][MAX_SIZE],
  */
 int check_game_over(int board[][MAX_SIZE], int visible[][MAX_SIZE], 
                     int rows, int cols) {
-    // TODO: Implement this function 
+    
+    int win = 1;
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (visible[i][j] == 1 && board[i][j] == -1) {
+                return -1; 
+            }
+
+            if (visible[i][j] == 0 && board[i][j] != -1) {
+                  win = 0;
+            }
+         } 
+    }
+
+
+    if (win == 1) {
+        return 1;
+    } 
+
     return 0; // replace the return value when implemented.
+
 }

@@ -73,7 +73,7 @@ void flood_fill(int board[][MAX_SIZE], int visible[][MAX_SIZE],
                 int rows, int cols, int row, int col) {
 
     // TODO: Implement this function
-
+    // testing to see if things will change without wifi
 }
 
 /**

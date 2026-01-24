@@ -58,7 +58,47 @@ void initialize_visible(int visible[][MAX_SIZE], int rows, int cols) {
  * Hint: Be careful with boundary checks!
  */
 void calculate_numbers(int board[][MAX_SIZE], int rows, int cols) {
-    // TODO: Implement this function.
+
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+                             
+
+        if (board[r][c] == -1) {
+	    for (int dupR = -1; dupR < 2; dupR++) {
+		for (int dupC = -1; dupC < 2; dupC++) {
+
+		    if (dupR == 0 && dupC == 0) {
+		        continue;
+		    }
+
+		    int currLocR = r + dupR;
+		    int currLocC = c + dupC;
+
+		    if (currLocR >= 0 && currLocR <= rows && currLocC >= 0 && cu			rrLocC <= cols && board[currLocR][currLocC] != -1) {		    
+			board[currLocR][currLocC] += 1;
+
+
+		}
+
+
+	    }
+ 
+	    
+
+
+	}
+
+
+
+
+	}
+
+
+
+    }
+
+
+
 }
 
 /**

@@ -152,12 +152,17 @@ void flood_fill(int board[][MAX_SIZE], int visible[][MAX_SIZE],
 void reveal_cell(int board[][MAX_SIZE], int visible[][MAX_SIZE],
                  int rows, int cols, int row, int col) {
     // TODO: Implement this function.
-   
     
+    if (visible[row][col] == 1) {
+	return;
+    }	
 
+    visible[row][col] = 1;
+    
+    if (board[row][col] == 0) {
+        flood_fill(board, visible, rows, cols, row, col);
 
-
-
+    }   
 
 
 }

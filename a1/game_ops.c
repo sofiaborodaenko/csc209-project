@@ -112,8 +112,32 @@ void calculate_numbers(int board[][MAX_SIZE], int rows, int cols) {
 void flood_fill(int board[][MAX_SIZE], int visible[][MAX_SIZE],
                 int rows, int cols, int row, int col) {
 
-    // TODO: Implement this function
-    // testing to see if things will change without wifi
+    
+    // check if out of boundary
+    if (row < 0 || row >= rows || col < 0 || col >= cols) return;
+    
+    // check if its already open	
+    if (visible[row][col] == 1) return
+
+    if (board[row][col] == 0) {
+	
+	visible[row][col] = 1;
+
+	flood_fill(board, visible, rows, cols, row, col-1);
+	flood_fill(board, visible, rows, cols, row, col+1);
+	flood_fill(board, visible, rows, cols, row-1, col);
+	flood_fill(board, visible, rows, cols, row+1, col);
+	flood_fill(board, visible, rows, cols, row-1, col+1);
+	flood_fill(board, visible, rows, cols, row+1, col+1);
+	flood_fill(board, visible, rows, cols, row-1, col-1);
+	flood_fill(board, visible, rows, cols, row+1, col-1);
+	
+   
+
+
+     }
+    
+   
 }
 
 /**
@@ -128,6 +152,14 @@ void flood_fill(int board[][MAX_SIZE], int visible[][MAX_SIZE],
 void reveal_cell(int board[][MAX_SIZE], int visible[][MAX_SIZE],
                  int rows, int cols, int row, int col) {
     // TODO: Implement this function.
+   
+    
+
+
+
+
+
+
 }
 
 /**

@@ -157,13 +157,13 @@ void reveal_cell(int board[][MAX_SIZE], int visible[][MAX_SIZE],
     if (visible[row][col] == 1) {
 	return;
     }	
-
-    visible[row][col] = 1;
     
     if (board[row][col] == 0) {
         flood_fill(board, visible, rows, cols, row, col);
 
-    }   
+    }
+    
+    visible[row][col] = 1;   
 
 
 }
@@ -182,15 +182,19 @@ void print_board(int board[][MAX_SIZE], int visible[][MAX_SIZE],
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             if (visible[i][j] == 1 && board[i][j] == -1) {
-                printf("M ");
+                printf("M");
  
             }
             else if (visible[i][j] == 1) {
-                printf("%d ", board[i][j]);
+                printf("%d", board[i][j]);
             }
 
             else {
-                printf(". ");
+                printf(".");
+            }
+
+	    if (j < cols-1) {
+		printf(" ");
             }
 
 

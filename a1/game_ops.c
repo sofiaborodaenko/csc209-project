@@ -74,7 +74,8 @@ void calculate_numbers(int board[][MAX_SIZE], int rows, int cols) {
 		    int currLocR = r + dupR;
 		    int currLocC = c + dupC;
 
-		    if (currLocR >= 0 && currLocR <= rows && currLocC >= 0 && cu			rrLocC <= cols && board[currLocR][currLocC] != -1) {		    
+		    if (currLocR >= 0 && currLocR <= rows && currLocC >= 0 
+  		&& currLocC <= cols && board[currLocR][currLocC] != -1) {		    
 			board[currLocR][currLocC] += 1;
 
 
@@ -100,7 +101,7 @@ void calculate_numbers(int board[][MAX_SIZE], int rows, int cols) {
 
 
 }
-
+}
 /**
  * Given the coordinates (row, col) of a cell that has 0 mines adjacent to it,
  * recursively reveal all connected safe cells. This will make visible all 
@@ -117,7 +118,7 @@ void flood_fill(int board[][MAX_SIZE], int visible[][MAX_SIZE],
     if (row < 0 || row >= rows || col < 0 || col >= cols) return;
     
     // check if its already open	
-    if (visible[row][col] == 1) return
+    if (visible[row][col] == 1) return;
 
     if (board[row][col] == 0) {
 	

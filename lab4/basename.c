@@ -8,7 +8,7 @@
  * on teach.cs, so you have a convenient way to test it
  *  - If path is "/" then return "/".
  *  - Return the component of path following the final '/'. Trailing '/' 
- *    characters are not counted as part of the pathname.
+basename_inplac *    characters are not counted as part of the pathname.
  *  - If path does not contain a slash, return path.
  *  - If path is a null pointer or points to an empty string, then 
  *    return ".".
@@ -21,7 +21,25 @@
  * level program with the same name.
  */
 
+char *basename_inplace(char *arg) {
+     if (arg == NULL || (*arg == ' ' && arg[1] == '\0') ) {
+	return ".";
+     } 
 
+     if (*arg == '/') return arg;
+
+     char *finalSlash = NULL;
+
+     for (int i = 0; arg[i] != '\0'; i++) {
+	if (arg[i] == '/') finalSlash = &arg[i];
+ 	
+     }
+
+     if (finalSlash == NULL) return arg;
+     if (*(finalSlash + 1) == ' ') return ".";
+     return (char *)(finalSlash + 1);
+  
+}
 
 
 int main(int argc, char **argv) {

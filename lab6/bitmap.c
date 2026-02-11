@@ -8,7 +8,29 @@
  * Use fseek to move the file position. Don't read the whole file.
  */
 void read_bitmap_metadata(FILE *image, int *pixel_array_offset, int *width, int *height) {
-    // TODO: Complete this function
+    fseek(image, 10, SEEK_SET);
+    int error = fread(pixel_array_offset, 4, 1, image);
+    
+    if (error == 0) {
+	printf("an error occured, cannot read pixel_beggining \n");
+    }
+
+
+    fseek(image, 18, SEEK_SET);
+    error = fread(width, 4, 1, image);
+
+    if (error == 0) {
+        printf("an error occured, cannot read width \n");
+    }
+
+    fseek(image, 22, SEEK_SET);
+    error = fread(height, 4, 1, image);
+
+    if (error == 0) {
+        printf("an error occured, cannot read height \n");
+    } 
+
+
 }
 
 /*
@@ -29,7 +51,34 @@ void read_bitmap_metadata(FILE *image, int *pixel_array_offset, int *width, int 
  * 5. Return the address of the first `struct pixel *` you initialized.
  */
 struct pixel **read_pixel_array(FILE *image, int pixel_array_offset, int width, int height) {
-    // TODO: Complete this function
+    
+     struct pixel **return_pixels = malloc(height * sizeof(struct pixel *));
+     
+     for (int i = 0; i < height; i++ ) {
+	return_pixels[i] = malloc(width * sizeof(struct pixel));
+     }  
+
+     fseek(image, pixel_array_offset, SEEK_SET); 
+    
+     unsigned char *colour_row = malloc(width*3);
+
+     for (int r = 0; r < height; r++) {
+	fread(colour_row, 1, width*3, image);
+
+	for (int c = 0; c < width; c++) {	    
+	    struct pixel p;
+	    p.blue = colour_row[c * 3];
+	    p.green = colour_row[c * 3 + 1];
+            p.red = colour_row[c * 3 + 2];
+ 
+	    return_pixels[r][c] = p; 
+	}
+     }
+
+     free(colour_row);
+
+     return return_pixels;
+
 }
 
 /*

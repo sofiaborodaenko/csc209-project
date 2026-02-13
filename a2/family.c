@@ -154,6 +154,25 @@ Family *find_biggest_family(Family *fam_list) {
 void deallocate_families(Family *fam_list) {
     // TODO: complete this function
 
+    Family *pointer = fam_list;
+
+    
+    while (pointer != NULL) {
+	free(pointer->signature);
+	
+	for (int i = 0; i < pointer->num_words; i++) {
+	    free(pointer->word_ptrs[i]);
+	
+	}
+
+	free(pointer->word_ptrs);
+
+	Family *next_pntr = pointer->next;
+	free(pointer)
+	pointer = next_pntr;
+    }
+
+
     return;
 }
 
@@ -176,7 +195,14 @@ Family *generate_families(char **word_list, char letter) {
 char *get_family_signature(Family *fam) {
     // TODO: complete this function, changing the return value
 
-    return NULL;
+    if (fam == NULL) {
+	printf("family pointed to by fam is null.");
+	return NULL;
+    }
+
+  
+    return fam->signature;
+
 }
 
 
@@ -188,6 +214,31 @@ char *get_family_signature(Family *fam) {
 */
 char **get_new_word_list(Family *fam) {
     // TODO: complete this function, changing the return value
+
+    if (fam == NULL) {
+	printf("fam is null");
+	return NULL;
+    }
+
+    char **word_ptrs = malloc(sizeof(char *) * fam->num_words + 1);
+	
+    if (word_ptrs == NULL) {
+	perror("malloc");
+	exit(1);
+	
+    }
+
+    for (int i = 0; i < num_words; i++) {
+	word_ptrs[i] = malloc(sizeof(char) * strlen(fam->word_ptrs[i]));
+
+	if (word_ptrs[i] == NULL) {
+	    perror("malloc");
+	    exit(1);
+	}
+
+	strcpy(word_ptrs[i]
+
+    }
 
     return NULL;
 }

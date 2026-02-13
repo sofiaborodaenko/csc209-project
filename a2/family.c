@@ -79,9 +79,8 @@ void add_word_to_family(Family *fam, char *word) {
 	char **error = realloc(fam->word_ptrs, sizeof(char *) * new_size);
 
 	if (error == NULL) {
-	    fprintf(stderr, "Something went wrong with realloc in add_word_to_family");
-	
-	    exit(EXIT_FAILURE);
+	    perror("realloc");
+	    exit(1);
 	}
 
 	fam->word_ptrs = error;
@@ -103,7 +102,20 @@ void add_word_to_family(Family *fam, char *word) {
 Family *find_family(Family *fam_list, char *sig) {
     // TODO: complete this function, changing the return value
 
+    Family *pointer = fam_list;
+
+    while (pointer != NULL) {
+    	if (strcmp(pointer->signature, sig) == 0) {
+	    return pointer;
+
+	}
+
+        pointer = pointer->next;
+
+    }
+
     return NULL;
+	
 }
 
 
@@ -115,7 +127,26 @@ Family *find_family(Family *fam_list, char *sig) {
 Family *find_biggest_family(Family *fam_list) {
     // TODO: complete this function, changing the return value
 
-    return NULL;
+    if (fam_list == NULL) {
+	return NULL;
+    }
+
+    Family *pointer = fam_list;
+    Family *largest = fam_list;
+ 
+    while (pointer != NULL) {
+	if (pointer->next != NULL) {
+	    
+	    if( largest->num_words  < pointer->num_words) {
+		largest = pointer;
+	    }
+
+	}
+
+	pointer = pointer->next;
+    }
+
+    return largest;
 }
 
 

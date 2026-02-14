@@ -220,7 +220,7 @@ char **get_new_word_list(Family *fam) {
 	return NULL;
     }
 
-    char **word_ptrs = malloc(sizeof(char *) * fam->num_words + 1);
+    char **word_ptrs = malloc(sizeof(char *) * (fam->num_words + 1));
 	
     if (word_ptrs == NULL) {
 	perror("malloc");
@@ -228,19 +228,15 @@ char **get_new_word_list(Family *fam) {
 	
     }
 
-    for (int i = 0; i < num_words; i++) {
-	word_ptrs[i] = malloc(sizeof(char) * strlen(fam->word_ptrs[i]));
+    for (int i = 0; i < fam->num_words; i++) {
 
-	if (word_ptrs[i] == NULL) {
-	    perror("malloc");
-	    exit(1);
-	}
-
-	strcpy(word_ptrs[i]
+	word_ptrs[i] = fam->word_ptrs[i]; 
 
     }
 
-    return NULL;
+    word_ptrs[fam->num_words] = NULL;
+
+    return word_ptrs;
 }
 
 

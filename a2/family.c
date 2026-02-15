@@ -187,6 +187,10 @@ void deallocate_families(Family *fam_list) {
 Family *generate_families(char **word_list, char letter) {
     // TODO: complete this function, changing the return value
 
+    int lengthOfWords = strlen(word_list[0]);
+
+
+
     return NULL;
 }
 
@@ -246,5 +250,15 @@ char **get_new_word_list(Family *fam) {
 char *get_random_word_from_family(Family *fam) {
     // TODO: complete this function, changing the return value
 
-    return NULL;
+    if ( fam == NULL || fam->word_ptrs == NULL || fam->num_words == 0) {
+	return NULL;
+    }
+
+    char *ret_pntr;  
+    int randInt = rand() % fam->num_words;
+
+    ret_pntr = fam->word_ptrs[randInt];
+
+
+    return ret_pntr;
 }

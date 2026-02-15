@@ -14,7 +14,39 @@
 char **prune_word_list(char **word_list, int len) {
     // TODO: complete this function, replacing the return statement
 
-    return NULL;
+    if (word_list == NULL) {
+	return NULL;
+
+    }
+
+
+    int intAll = 0;	
+
+    for (int i = 0; word_list[i] != NULL; i++) {
+	if (strlen(word_list[i]) == len) {
+ 	    intAll++;
+   	}
+    }
+
+    char **prune_list = malloc(sizeof(char *) * (intAll + 1));
+
+    if (
+
+
+    int index = 0;
+
+    for (int j = 0; word_list[j] != NULL; j++) {
+	if (strlen(word_list[j]) == len) {
+	    prune_list[index] = word_list[j];
+            index++;
+	
+	}
+	
+    }
+
+    prune_list[index] = NULL;
+
+    return prune_list;
 }
 
 

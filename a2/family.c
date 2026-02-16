@@ -51,11 +51,9 @@ void print_families(Family* fam_list) {
       - next is NULL.
 */
 Family *new_family(char *str) {
-    // TODO: complete this function, changing the return value
-
-
+    
     Family *new_fam = malloc(sizeof(Family));
-    new_fam.signature = malloc(sizeof(char) * strlen(str) + 1);
+    new_fam->signature = malloc(sizeof(char) * strlen(str) + 1);
 	
     strcpy(new_fam->signature, str);   
     new_fam->word_ptrs = malloc(sizeof(char *) * (family_increment+1));
@@ -72,8 +70,7 @@ Family *new_family(char *str) {
    more pointers and then add the new pointer.
 */
 void add_word_to_family(Family *fam, char *word) {
-    // TODO: complete this function
-
+    
     if (fam->num_words >= fam->max_words) {
 	int new_size = fam->max_words + family_increment;
 	char **error = realloc(fam->word_ptrs, sizeof(char *) * new_size);
@@ -100,8 +97,7 @@ void add_word_to_family(Family *fam, char *word) {
    fam_list is a pointer to the head of a list of Family nodes.
 */
 Family *find_family(Family *fam_list, char *sig) {
-    // TODO: complete this function, changing the return value
-
+    
     Family *pointer = fam_list;
 
     while (pointer != NULL) {
@@ -125,8 +121,7 @@ Family *find_family(Family *fam_list, char *sig) {
    fam_list is a pointer to the head of a list of Family nodes.
 */
 Family *find_biggest_family(Family *fam_list) {
-    // TODO: complete this function, changing the return value
-
+    
     if (fam_list == NULL) {
 	return NULL;
     }
@@ -152,8 +147,7 @@ Family *find_biggest_family(Family *fam_list) {
 
 /* Deallocate all memory rooted in the List pointed to by fam_list. */
 void deallocate_families(Family *fam_list) {
-    // TODO: complete this function
-
+    
     Family *pointer = fam_list;
 
     
@@ -168,7 +162,7 @@ void deallocate_families(Family *fam_list) {
 	free(pointer->word_ptrs);
 
 	Family *next_pntr = pointer->next;
-	free(pointer)
+	free(pointer);
 	pointer = next_pntr;
     }
 
@@ -185,20 +179,54 @@ void deallocate_families(Family *fam_list) {
    that have at least one word from the current word_list.
 */
 Family *generate_families(char **word_list, char letter) {
-    // TODO: complete this function, changing the return value
+
+    Family *fam_head = NULL;
 
     int lengthOfWords = strlen(word_list[0]);
 
+    
+    // main loop to traverse through the words in the list
+    for (int i = 0; word_list[i] != NULL; i++) {
+	
+	char *signature = malloc(sizeof(char) * (lengthOfWords + 1));	
+		
+	// for generating the signature of the word
+ 	for (int j = 0; word_list[i][j] != '\0'; j++) {
+		if (word_list[i][j] == letter) {
+		    signature[j] = letter;	
+                } else {
+		    signature[j] = '-';
+ 		}
+	}
+	
+	signature[lengthOfWords] = '\0';
+     
+	Family *family = find_family(fam_head, signature);
+
+        if (family == NULL) {
+
+	    Family *new_fam = new_family(signature);
+	    
+  	    new_fam->next = fam_head;
+	    fam_head = new_fam;
+
+        } else {
+	    add_word_to_family(family, word_list[i]);	
+
+	}
+
+	free(signature);
 
 
-    return NULL;
+    }
+
+    return fam_head;
 }
 
 
 /* Return the signature of the family pointed to by fam. */
 char *get_family_signature(Family *fam) {
-    // TODO: complete this function, changing the return value
-
+   
     if (fam == NULL) {
 	printf("family pointed to by fam is null.");
 	return NULL;
@@ -217,8 +245,7 @@ char *get_family_signature(Family *fam) {
    As with fam->word_ptrs, the final pointer should be NULL.
 */
 char **get_new_word_list(Family *fam) {
-    // TODO: complete this function, changing the return value
-
+    
     if (fam == NULL) {
 	printf("fam is null");
 	return NULL;
@@ -248,8 +275,7 @@ char **get_new_word_list(Family *fam) {
    Use rand (man 3 rand) to generate random integers.
 */
 char *get_random_word_from_family(Family *fam) {
-    // TODO: complete this function, changing the return value
-
+    
     if ( fam == NULL || fam->word_ptrs == NULL || fam->num_words == 0) {
 	return NULL;
     }

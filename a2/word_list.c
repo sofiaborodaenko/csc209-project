@@ -30,7 +30,10 @@ char **prune_word_list(char **word_list, int len) {
 
     char **prune_list = malloc(sizeof(char *) * (intAll + 1));
 
-    if (
+    if (prune_list == NULL) {
+	perror("malloc");
+	exit(1);
+    }
 
 
     int index = 0;
@@ -53,5 +56,8 @@ char **prune_word_list(char **word_list, int len) {
 /* Free memory acquired by prune_word_list.
 */
 void deallocate_pruned_word_list(char **word_list) {
+    
+    if (word_list == NULL) return;
+
     free(word_list);
 }

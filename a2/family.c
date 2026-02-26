@@ -58,7 +58,7 @@ Family *new_family(char *str) {
         exit(1);
     }
 
-    new_fam->signature = malloc(sizeof(char) * strlen(str) + 1);
+    new_fam->signature = malloc(sizeof(char) * (strlen(str) + 1));
     if (new_fam->signature == NULL) {
         perror("malloc");
         exit(1);
@@ -86,7 +86,7 @@ void add_word_to_family(Family *fam, char *word) {
     
     if (fam->num_words >= fam->max_words) {
         int new_size = fam->max_words + family_increment;
-        char **error = realloc(fam->word_ptrs, sizeof(char *) * new_size);
+        char **error = realloc(fam->word_ptrs, sizeof(char *) * (new_size+1));
 
         if (error == NULL) {
             perror("realloc");
@@ -99,7 +99,7 @@ void add_word_to_family(Family *fam, char *word) {
 
     fam->word_ptrs[fam->num_words] = word;
     fam->num_words++;
-
+    fam->word_ptrs[fam->num_words] = NULL;
 
     return;
 }
@@ -238,7 +238,6 @@ Family *generate_families(char **word_list, char letter) {
 char *get_family_signature(Family *fam) {
    
     if (fam == NULL) {
-        printf("family pointed to by fam is null.");
         return NULL;
     }
 
@@ -257,7 +256,6 @@ char *get_family_signature(Family *fam) {
 char **get_new_word_list(Family *fam) {
     
     if (fam == NULL) {
-        printf("fam is null");
         return NULL;
     }
 

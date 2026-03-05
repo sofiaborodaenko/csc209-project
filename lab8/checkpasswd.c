@@ -62,7 +62,7 @@ int main(void) {
     
     }
 
-    if (strlen(user_id) > MAX_PASSWORD || strlen(password) > MAX_PASSWORD) {
+    if (strlen(user_id)-1 > MAX_PASSWORD || strlen(password)-1 > MAX_PASSWORD) {
       exit(1);
     }
 

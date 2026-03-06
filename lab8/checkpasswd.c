@@ -38,6 +38,7 @@ int main(void) {
 
   if (pipe(pipe_fd) == -1) {
     perror("pipe");  
+    exit(1);
 
   }
 
@@ -46,6 +47,7 @@ int main(void) {
   if (f == 0) {
     if (close(pipe_fd[1]) == -1) {
       perror("close");
+      exit(1);
     
     }
     
@@ -53,35 +55,47 @@ int main(void) {
     close(pipe_fd[0]);
     execl("./validate", "validate", NULL);
     perror("execl");
+    exit(1);
     
 
   } else {
 
     if (close(pipe_fd[0]) == -1) {
       perror("close");
+      exit(1);
     
     }
 
-    if (strlen(user_id)-1 > MAX_PASSWORD || strlen(password)-1 > MAX_PASSWORD) {
-      exit(1);
+    if (strlen(password)-1 > MAX_PASSWORD) {
+      printf(INVALID);
+      exit(0);
+    }
+
+    if (strlen(user_id)-1 > MAX_PASSWORD) {
+      printf(NO_USER);
+      exit(0);
     }
 
     if (write(pipe_fd[1], user_id, MAX_PASSWORD) == -1) {
       perror("write");
+      exit(1);
     
     }
     if (write(pipe_fd[1], password, MAX_PASSWORD) == -1) {
       perror("write");
+      exit(1);
     
     }
 
     if (close(pipe_fd[1]) == -1) {
       perror("close");
+      exit(1);
     }
 
     int status;
     if (wait(&status) == -1) {
       perror("wait");
+      exit(1);
     }
 
     if (WIFEXITED(status)) {

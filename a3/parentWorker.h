@@ -1,6 +1,10 @@
+#include <stdbool.h>
+
 #ifndef PARENTWORKER_H
 #define PARENTWORKER_H
 #define MAX_CHAR 256
+
+
 
 typedef struct {
     int job_id;

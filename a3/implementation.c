@@ -195,7 +195,7 @@ long count_size(char *filename, char *category){
     if (size == -1) {
         perror("ftell");
         fclose(open_file);
-        exit(1);
+        return -1;
     }
 
     fclose(open_file);
@@ -269,7 +269,7 @@ void create_job(job_msg *job, const char *filename, int job_id) {
     strcpy(job->filename, filename);
 }
 
-void add_valid_file_to_array(char **valid_files, int valid_file_count, int max_files, char *filename) {
+void add_valid_file_to_array(char **valid_files, int *valid_file_count, int max_files, char *filename) {
      
     if (valid_file_count >= max_files) {
         
@@ -285,9 +285,9 @@ void add_valid_file_to_array(char **valid_files, int valid_file_count, int max_f
         max_files = new_size;
     }
 
-    valid_files[valid_file_count] = filename;
-    valid_file_count++;
-    valid_files[valid_file_count] = NULL;
+    valid_files[*valid_file_count] = filename;
+    (*valid_file_count)++;
+    valid_files[*valid_file_count] = NULL;
 
     return;
 }

@@ -11,7 +11,7 @@
 main (int argc, char **argv) {
 
     int which_op = 0;
-    char *dir_to_use[PATH_MAX];
+    char dir_to_use[PATH_MAX];
     DIR *d;
     struct dirent *entry; // to hold the current file in the directory
 
@@ -47,7 +47,7 @@ main (int argc, char **argv) {
             if (check_file_name(entry->d_name)) {
                 printf("Valid file: %s\n", entry->d_name);
                 // add to the array of valid files
-                add_valid_file_to_array(valid_files, valid_file_count, MAX_FILES, entry->d_name);
+                add_valid_file_to_array(valid_files, &valid_file_count, MAX_FILES, entry->d_name);
             
             }
         }
@@ -89,14 +89,12 @@ main (int argc, char **argv) {
             }
 
             // parent had opened the previously closed ends of the previous forked children 
-            for (int j = 1; j < i; j++) {
-                if (close(job_pipe[j][1])) {
-                    perror("close");
-                    exit(1);
-                }
-                if (close(result_pipe[j][0])) {
-                    perror("close");
-                    exit(1);
+            for (int j = 0; j < WORKER_COUNT; j++) {
+                if (j != i) {
+                    if (close(job_pipe[j][0]) || close(job_pipe[j][1]) || close(result_pipe[j][0]) || close(result_pipe[j][1])) {
+                        perror("close");
+                        exit(1);
+                    }
                 }
             }
 
@@ -158,7 +156,7 @@ main (int argc, char **argv) {
             // write to the worker based on the allocated number of files for each
             for (int j = 0; j < each_worker; j++) {
                 job_msg job;
-                create_job(&job, valid_files[count], count);
+                create_job(&job, valid_files[count], i);
                 count++;
                 if (write(job_pipe[i][1], &job, sizeof(job_msg)) == -1) {
                     perror("write");
@@ -170,7 +168,7 @@ main (int argc, char **argv) {
             for (int j = 0; j < remaining_files; j++) {
                 if (i < remaining_files) {
                     job_msg job;
-                    create_job(&job, valid_files[count], count);
+                    create_job(&job, valid_files[count], i);
                     count++;
                     if (write(job_pipe[i][1], &job, sizeof(job_msg)) == -1) {
                         perror("write");
@@ -182,13 +180,61 @@ main (int argc, char **argv) {
 
         }
 
-        result_msg result;
-
-
-
-
     }
 
+    // only the parents gets here
+    result_msg result;
+
+    fd_set readfds;
+    int max_fd = 0;
+
+    // find max fd
+    for (int i = 0; i < WORKER_COUNT; i++) {
+        if (result_pipe[i][0] > max_fd) {
+            max_fd = result_pipe[i][0];
+        }
+    }
+
+    int active_pipes = WORKER_COUNT;
+
+    // read until all workers are done
+    while (active_pipes > 0) {
+        FD_ZERO(&readfds); // clear the set before adding the fds
+
+        for (int i = 0; i < WORKER_COUNT; i++) {
+            if (result_pipe[i][0] != -1) {
+                FD_SET(result_pipe[i][0], &readfds); // add the fd to the set
+            }
+        }
+
+        int ready = select(max_fd + 1, &readfds, NULL, NULL, NULL); // wait for any of the fds to be ready for reading
+
+        if (ready < 0) {
+            perror("select");
+            exit(1);
+        }
+
+        for (int i = 0; i < WORKER_COUNT; i++) {
+            int fd = result_pipe[i][0];
+
+            if (fd != -1 && FD_ISSET(fd, &readfds)) {
+                result_msg result;
+
+                int bytes = read(fd, &result, sizeof(result_msg));
+
+                if (bytes > 0) {
+                    printf("Parent got result from worker %d: %s\n",
+                        i, result.original_name);
+                } 
+                else {
+                    // pipe closed means worker done
+                    close(fd);
+                    result_pipe[i][0] = -1;
+                    active_pipes--;
+                }
+            }
+        }
+    }
 
 
 }

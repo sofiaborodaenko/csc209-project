@@ -15,7 +15,7 @@ main (int argc, char **argv) {
     DIR *d;
     struct dirent *entry; // to hold the current file in the directory
 
-    char **valid_files = malloc(sizeof(char *) * MAX_FILES);
+    char **valid_files = malloc(sizeof(char *) * (MAX_FILES + 1));
     int valid_file_count = 0;
 
     if (argc != 1) {
@@ -47,18 +47,15 @@ main (int argc, char **argv) {
             if (check_file_name(entry->d_name)) {
                 printf("Valid file: %s\n", entry->d_name);
                 // add to the array of valid files
-
-                if (valid_file_count < MAX_FILES) {
-                    valid_files[valid_file_count] = malloc(sizeof(char) * (strlen(entry->d_name) + 1));
-                    strcpy(valid_files[valid_file_count], entry->d_name);
-                    valid_file_count++;
-                } else {
-                    
-                }
-
+                add_valid_file_to_array(valid_files, valid_file_count, MAX_FILES, entry->d_name);
+            
             }
         }
     }
+
+    int each_worker = valid_file_count / WORKER_COUNT; // how many files each worker will process
+    int remaining_files = valid_file_count % WORKER_COUNT; // if there are any remaining 
+    int count = 0;
 
     int job_pipe[WORKER_COUNT][2]; // for the parents to send to the workers
     int result_pipe[WORKER_COUNT][2]; // for the workers to send back to the parent
@@ -125,6 +122,7 @@ main (int argc, char **argv) {
 
                 long size = count_size(job.filename, category);
 
+                // create the result struct to send back
                 create_result(&result, job.job_id, job.filename, clean_name, clean_name, target_path[0], category, lines, words, size);
 
                 // write the result back to the parent
@@ -157,8 +155,35 @@ main (int argc, char **argv) {
                 exit(1);
             }
 
+            // write to the worker based on the allocated number of files for each
+            for (int j = 0; j < each_worker; j++) {
+                job_msg job;
+                create_job(&job, valid_files[count], count);
+                count++;
+                if (write(job_pipe[i][1], &job, sizeof(job_msg)) == -1) {
+                    perror("write");
+                    exit(1);
+                }
+            }
+
+            // write the remaining files to the first few workers
+            for (int j = 0; j < remaining_files; j++) {
+                if (i < remaining_files) {
+                    job_msg job;
+                    create_job(&job, valid_files[count], count);
+                    count++;
+                    if (write(job_pipe[i][1], &job, sizeof(job_msg)) == -1) {
+                        perror("write");
+                        exit(1);
+                    }
+                }
+            }
+
 
         }
+
+        result_msg result;
+
 
 
 

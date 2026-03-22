@@ -226,7 +226,7 @@ bool check_file_name(const char *filename){
 
 } // can be used to check if the file is valid before sending it to the worker
 
-void create_go_directory(char *dir_name[], char *clean_file_name, int size){
+void create_go_directory(char * main_dir, char *dir_name[], char *clean_file_name, int size){
     // given the size traverse through each, add the first to a new string, first check if directory exists if not create it, then add a / and then the second one, and same thing.  
 
     int size_of_dir = 0;
@@ -234,9 +234,11 @@ void create_go_directory(char *dir_name[], char *clean_file_name, int size){
         size_of_dir += strlen(dir_name[i]) + 1; // add 1 for the slash
     }
 
+    size_of_dir += strlen(main_dir) + 1; // add 1 for the slash
     size_of_dir += strlen(clean_file_name) + 1; // add 1 for the null terminator
 
     char *complete_directory = malloc(sizeof(char) * size_of_dir);
+    strcpy(complete_directory, main_dir); // add the main directory 
 
     struct stat st;
 

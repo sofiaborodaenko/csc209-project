@@ -25,6 +25,20 @@
 "mp3", "aac", "ogg", "wav", "flac", "alac", "m4a", "opus", "wma", "aiff", "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "mpeg", "mpg", "m4v"
 
 
+void create_result(result_msg *result, int job_id, char *original_name, char *clean_name, char *target_name, char *target_path, char *category, int lines, int words, long size) {
+
+    result->job_id = job_id;
+    strcpy(result->original_name, original_name);
+    strcpy(result->clean_name, clean_name);
+    strcpy(result->target_name, target_name);
+    strcpy(result->target_path[0], target_path);
+    strcpy(result->category, category);
+    result->lines = lines;
+    result->words = words;
+    result->size = size;
+
+}
+
 
 // cleans up the filename 
 char *clean_filename(char *filename) {
@@ -33,7 +47,12 @@ char *clean_filename(char *filename) {
     char *first_underscore = strchr(filename, '_'); // find the first occurence of the underscore
     char *period = strchr(filename, '.'); // find the first occurence of the period (file extension)
 
-    int diff = strlen(first_underscore) - strlen(filename); // find length of the filename 
+    // printf("first underscore: %s\n", first_underscore);
+    // printf("period: %s\n", period);
+
+    int diff = strlen(filename) - strlen(first_underscore) ; // find length of the filename 
+
+    // printf("diff: %d\n", diff);
 
     char *clean_name = malloc(sizeof(char) * (diff + strlen(period) + 1));
     strncpy(clean_name, filename, diff);
@@ -43,11 +62,15 @@ char *clean_filename(char *filename) {
 }
 
 char **create_target_path(char *filename) {
+    char *copy = malloc(strlen(filename) + 1); // for the test with string literals 
+    strcpy(copy, filename);
 
     char *tokens[10]; // temporary array to hold the broken up filename
     int n = 0;
 
-    char *tok = strtok(filename, "_."); // break up the filename by _ and . and store in the array
+    char *tok = strtok(copy, "_."); // break up the filename by _ and . and store in the array
+
+    printf("filename: %s\n", tok);
 
     while (tok != NULL) {
         tokens[n++] = tok;
@@ -135,12 +158,14 @@ int count_words(char *filename){
     }
 
     int words = 0;
+    char *word = malloc(sizeof(char) * 100); // buffer to hold each word
 
-    while (fscanf(open_file, "%99s", words) == 1) {
+    while (fscanf(open_file, "%99s", word) == 1) {
         words++;
     }
 
     fclose(open_file);
+    free(word);
     return words;
 }
 
@@ -233,11 +258,45 @@ void create_go_directory(char *dir_name[], char *clean_file_name, int size){
         exit(1);
     }
 
+    return;
+
 }
-void print_summary(char *original_filenames[], char *clean_filenames[], char *target_paths[], char *categorys[], int lines[], int words[], long sizes[], int num_files) {
+
+void create_job(job_msg *job, const char *filename, int job_id) {
+    job->job_id = job_id;
+    strcpy(job->filename, filename);
+}
+
+void add_valid_file_to_array(char **valid_files, int valid_file_count, int max_files, char *filename) {
+     
+    if (valid_file_count >= max_files) {
+        
+        int new_size = max_files * 2;
+        char **error = realloc(valid_files, sizeof(char *) * (new_size+1));
+
+        if (error == NULL) {
+            perror("realloc");
+            exit(1);
+        }
+
+        valid_files = error;
+        max_files = new_size;
+    }
+
+    valid_files[valid_file_count] = filename;
+    valid_file_count++;
+    valid_files[valid_file_count] = NULL;
+
+    return;
+}
+
+
+void print_summary(char *original_filenames[], char *clean_filenames[], char **target_paths[], char *categorys[], int lines[], int words[], long sizes[], int num_files) {
     // print a nicley formated summary given all of the details 
 
+    printf("-------------------------------\n");
     printf("FILE ORGANIZATION SUMMARY \n");
+    printf("-------------------------------\n");
 
     int category_counts[4] = {0, 0, 0, 0}; // 0 = plain text, 1 = document, 2 = audio/video, 3 = other
 
@@ -247,8 +306,8 @@ void print_summary(char *original_filenames[], char *clean_filenames[], char *ta
     for (int i = 0; original_filenames[i] != NULL; i++) {
         printf("%s", original_filenames[i]);
         printf(" -> %s", clean_filenames[i]);
-        printf("(%ld)", sizes[i]);
-        printf(" -> %s", target_paths[i]);
+        printf(" (%ld bytes)", sizes[i]);
+        // printf(" -> %s", target_paths[i]);
         printf("\n");
 
         if (strcmp(categorys[i], "plain text") == 0) {
@@ -265,7 +324,10 @@ void print_summary(char *original_filenames[], char *clean_filenames[], char *ta
         total_words += words[i];
     }
 
+    printf("\n");
+    printf("-------------------------------\n");
     printf("Statistics \n");
+    printf("-------------------------------\n");
 
     printf("Files processed: %d \n", num_files);
     printf("Plain text files: %d \n", category_counts[0]);
@@ -273,7 +335,7 @@ void print_summary(char *original_filenames[], char *clean_filenames[], char *ta
     printf("Audio/Video files: %d \n", category_counts[2]);
     printf("Other files: %d \n", category_counts[3]);
     printf("Total lines in plain text files: %d \n", total_lines);
-    printf("Total words in plain text files: %d \n", total_words);
+    printf("Total words in plain text files: %d \n\n", total_words);
 
 
 }

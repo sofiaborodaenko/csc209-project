@@ -43,12 +43,14 @@ int main (int argc, char **argv) {
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
+
+        if (entry->d_name[0] == '.') {
+            continue; // skip hidden files
+        }
+
         // checks if its a regular file
         if (entry->d_type == DT_REG) {
-            printf("File: %s\n", entry->d_name);
-                
             if (check_file_name(entry->d_name)) {
-                printf("Valid file: %s\n", entry->d_name);
                 // add to the array of valid files
                 add_valid_file_to_array(valid_files, &valid_file_count, MAX_FILES, entry->d_name);
             
@@ -56,8 +58,18 @@ int main (int argc, char **argv) {
         }
     }
 
+    // if there are no valid files, exit the program
+    if (valid_file_count == 0) {
+        printf("No valid files found in the directory.\n");
+        closedir(d);
+        free(valid_files);
+        return 0;
+    }
+
     int each_worker = valid_file_count / WORKER_COUNT; // how many files each worker will process
+    printf("Each worker will process %d files.\n", each_worker);
     int remaining_files = valid_file_count % WORKER_COUNT; // if there are any remaining 
+    printf("There are %d remaining files that will be distributed to the first few workers.\n", remaining_files);
     int count = 0;
 
     int job_pipe[WORKER_COUNT][2]; // for the parents to send to the workers
@@ -91,29 +103,18 @@ int main (int argc, char **argv) {
                 exit(1);
             }
 
-            // parent had opened the previously closed ends of the previous forked children 
-            for (int j = 1; j < i; j++) {
-                if (close(job_pipe[j][0])) {
-                    perror("close");
-                    exit(1);
-                }
-                if (close(result_pipe[j][1])) {
-                    perror("close");
-                    exit(1);
-                }
-            }
-
             job_msg job;
 
             while (read(job_pipe[i][0], &job, sizeof(job_msg)) > 0) {
                 // printf("Worker %d received job: %s\n", i, job.filename);
                 // process the job and create the result
+                // if (job.filename[0] == '\0') {
+                //     break; // skip empty jobs
+                // }
+
                 result_msg result;
                 char *clean_name = clean_filename(job.filename);
                 char **target_path = create_target_path(job.filename);
-                char *new_directory = create_go_directory(dir_to_use, target_path, clean_name, job.filename, sizeof(target_path));
-                char new_path[PATH_MAX];
-                strcpy(new_path, new_directory);
 
                 char *category = categorize_file(job.filename);
                 int lines;
@@ -129,6 +130,10 @@ int main (int argc, char **argv) {
 
                 long size = count_size(job.filename, category, dir_to_use);
 
+                char *new_directory = create_go_directory(dir_to_use, target_path, clean_name, job.filename);
+                char new_path[PATH_MAX];
+                strcpy(new_path, new_directory);
+
                 // create the result struct to send back
                 create_result(&result, job.job_id, job.filename, clean_name, clean_name, new_path, category, lines, words, size);
 
@@ -137,6 +142,31 @@ int main (int argc, char **argv) {
                     perror("write");
                     exit(1);
                 }
+
+                // free allocated memory after writing to 
+                free(clean_name);
+                for (int k = 0; target_path[k] != NULL; k++) free(target_path[k]);
+                free(target_path);
+                free(new_directory);
+
+            }
+
+             // parent had opened the previously closed ends of the previous forked children 
+            for (int j = 1; j < i; j++) {
+                if (close(job_pipe[j][1])) {
+                    perror("close");
+                    exit(1);
+                }
+
+                // closes the reading end of the result pipe (only writes)
+                if (close(result_pipe[j][0])) {
+                    perror("close");
+                    exit(1);
+                }
+                // close(job_pipe[j][0])
+                // close(job_pipe[j][1]);   
+                // close(result_pipe[j][0]); 
+                // close(result_pipe[j][1])
             }
         
             if (close(job_pipe[i][0])) {
@@ -165,8 +195,17 @@ int main (int argc, char **argv) {
             // write to the worker based on the allocated number of files for each
             for (int j = 0; j < each_worker; j++) {
                 job_msg job;
+
+                // if (count >= valid_file_count) {
+                //     // send termination job
+                //     job_msg end_job;
+                //     end_job.filename[0] = '\0';
+                //     write(job_pipe[i][1], &end_job, sizeof(job_msg));
+                //     // break; // no more valid files to assign
+                // }
                 create_job(&job, valid_files[count], i);
                 count++;
+
                 if (write(job_pipe[i][1], &job, sizeof(job_msg)) == -1) {
                     perror("write");
                     exit(1);
@@ -176,6 +215,9 @@ int main (int argc, char **argv) {
             // write the remaining files to the first few workers
             for (int j = 0; j < remaining_files; j++) {
                 if (i < remaining_files) {
+                    if (count >= valid_file_count) {
+                        break; // no more valid files to assign
+                    }
                     job_msg job;
                     create_job(&job, valid_files[count], i);
                     count++;
@@ -186,13 +228,24 @@ int main (int argc, char **argv) {
                 }
             }
 
+            close(job_pipe[i][1]); // close the writing end after sending all jobs to the worker
+
 
         }
 
     }
 
-    // only the parents gets here
+    // only the parent gets here
     result_msg result;
+
+    char *original_filenames[valid_file_count];
+    char *clean_filenames[valid_file_count];
+    char *target_paths[valid_file_count];
+    char *categories[valid_file_count];
+    int lines[valid_file_count];   
+    int words[valid_file_count];
+    long sizes[valid_file_count];
+    int result_count = 0;
 
     fd_set readfds;
     int max_fd = 0;
@@ -232,10 +285,22 @@ int main (int argc, char **argv) {
                 int bytes = read(fd, &result, sizeof(result_msg));
 
                 if (bytes > 0) {
-                    printf("Parent got result from worker %d: %s\n",
-                        i, result.original_name);
-                } 
-                else {
+
+                    if (result_count < valid_file_count) {
+                        printf("Parent got result from worker %d: %s\n",
+                            i, result.original_name);
+                        //store the result in the arrays to print the summary later
+                        original_filenames[result_count] = strdup(result.original_name);
+                        clean_filenames[result_count] = strdup(result.clean_name);
+                        target_paths[result_count] = strdup(result.target_path);
+                        categories[result_count] = strdup(result.category);
+                        lines[result_count] = result.lines;
+                        words[result_count] = result.words;
+                        sizes[result_count] = result.size;
+                        result_count++;
+                    }
+
+                } else {
                     // pipe closed means worker done
                     close(fd);
                     result_pipe[i][0] = -1;
@@ -244,6 +309,20 @@ int main (int argc, char **argv) {
             }
         }
     }
+
+    for (int i = 0; i < WORKER_COUNT; i++) {
+        int status;
+        wait(&status);  // wait for each child to exit
+    }
+
+    // close all the remaining open fds
+    for (int i = 0; i < WORKER_COUNT; i++) {
+        if (result_pipe[i][0] != -1) {
+            close(result_pipe[i][0]);
+        }
+    }
+
+    print_summary(original_filenames, clean_filenames, target_paths, categories, lines, words, sizes, result_count);
 
     return 0;
 

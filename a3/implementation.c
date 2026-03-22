@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <ctype.h>
 
 #include "parentWorker.h"
 
@@ -56,6 +57,7 @@ char *clean_filename(char *filename) {
 
     char *clean_name = malloc(sizeof(char) * (diff + strlen(period) + 1));
     strncpy(clean_name, filename, diff);
+    // clean_name[diff] = '\0'; // null terminate the string
     strcat(clean_name, period);
     return clean_name;
 
@@ -70,7 +72,7 @@ char **create_target_path(char *filename) {
 
     char *tok = strtok(copy, "_."); // break up the filename by _ and . and store in the array
 
-    printf("filename: %s\n", tok);
+   // printf("filename: %s\n", tok);
 
     while (tok != NULL) {
         tokens[n++] = tok;
@@ -215,8 +217,11 @@ long count_size(char *filename, char *category, char *home_directory) {
 }
 
 bool check_file_name(const char *filename){
-    // check if file contains at least one underscore and exactly one period 
-
+    // check if file contains at least one underscore and exactly one period + no whitespace characters 
+    
+    // whitespace characters to check
+    const char *whitespace_chars = " \t\n\r\v\f";
+    
     if (strchr(filename, '_') == NULL) {
         return false; // no underscore found
     }
@@ -225,6 +230,10 @@ bool check_file_name(const char *filename){
 
     if (period == NULL) {
         return false; // no period found
+    }
+
+    if (strpbrk(filename, whitespace_chars) != NULL) {
+        return false; // whitespace character found
     }
 
     char *period_two = strchr(period + 1, '.'); // check if there is another period after the first one
@@ -237,11 +246,11 @@ bool check_file_name(const char *filename){
 
 } // can be used to check if the file is valid before sending it to the worker
 
-char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_name, char *old_file_name, int size){
+char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_name, char *old_file_name){
     // given the size traverse through each, add the first to a new string, first check if directory exists if not create it, then add a / and then the second one, and same thing.  
 
-    printf("main dir: %s\n", main_dir);
-    printf("clean file name: %s\n", clean_file_name);
+   // printf("main dir: %s\n", main_dir);
+    // printf("clean file name: %s\n", clean_file_name);
 
     int size_of_dir = 0;
     for (int i = 0; dir_name[i] != NULL; i++) {
@@ -276,14 +285,11 @@ char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_nam
 
     strcat(complete_directory, clean_file_name);
 
-    char *home_dir = malloc(sizeof(char) * (strlen(main_dir) + 1));
-    strcpy(home_dir, main_dir);
+    char *home_dir = malloc(strlen(main_dir) + 1 + strlen(old_file_name) + 1);
+    sprintf(home_dir, "%s/%s", main_dir, old_file_name);
 
-    strcat(home_dir, "/");
-    strcat(home_dir, old_file_name);
-
-    printf("home dir: %s\n", home_dir);
-    printf("complete dir: %s\n", complete_directory);
+    //printf("home dir: %s\n", home_dir);
+    // printf("complete dir: %s\n", complete_directory);
 
     if (rename(home_dir, complete_directory) == -1) {
         perror("rename");

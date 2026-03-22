@@ -3,7 +3,7 @@ DEPENDENCIES = parentWorker.h
 
 all: a3
 
-a3: test.o implementation.o filesort.o
+a3: implementation.o filesort.o
 	gcc ${FLAGS} -o $@ $^
 
 test.o: test.c parentWorker.h

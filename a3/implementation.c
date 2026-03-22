@@ -31,7 +31,7 @@ void create_result(result_msg *result, int job_id, char *original_name, char *cl
     strcpy(result->original_name, original_name);
     strcpy(result->clean_name, clean_name);
     strcpy(result->target_name, target_name);
-    strcpy(result->target_path[0], target_path);
+    strcpy(result->target_path, target_path);
     strcpy(result->category, category);
     result->lines = lines;
     result->words = words;
@@ -124,10 +124,14 @@ char *categorize_file(char *filename){
 
 }
 
-int count_lines(char *filename){
+int count_lines(char *filename, char *home_directory){
     // check if the category is a text, would need to call the above function, if yes then open the file, read fgets until the end while counting the number of lines, close the file
 
-    FILE *open_file = fopen(filename, "r");
+    char * full_path = malloc(strlen(home_directory) + strlen(filename) + 2); // for the slash and null terminator
+    sprintf(full_path, "%s/%s", home_directory, filename);
+    
+
+    FILE *open_file = fopen(full_path, "r");
 
     if (open_file == NULL) {
         perror("fopen");
@@ -147,10 +151,13 @@ int count_lines(char *filename){
 }
 
 
-int count_words(char *filename){
+int count_words(char *filename, char *home_directory){
     // check if categoy is a text, then use fscanf and fscanf(f, "%99s", word) == 1 then add it to a counter 
 
-    FILE *open_file = fopen(filename, "r");
+    char *full_path = malloc(strlen(home_directory) + strlen(filename) + 2); // for the slash and null terminator
+    sprintf(full_path, "%s/%s", home_directory, filename);
+
+    FILE *open_file = fopen(full_path, "r");
 
     if (open_file == NULL) {
         perror("fopen");
@@ -170,13 +177,17 @@ int count_words(char *filename){
 }
 
 
-long count_size(char *filename, char *category){
+long count_size(char *filename, char *category, char *home_directory) {
+
+    char *full_path = malloc(strlen(home_directory) + strlen(filename) + 2); // for the slash and null terminator
+    sprintf(full_path, "%s/%s", home_directory, filename);
+
     FILE *open_file;
     
     if (strcmp(category, "plain text") == 0) {
-        open_file = fopen(filename, "r");
+        open_file = fopen(full_path, "r");
     } else {
-        open_file = fopen(filename, "rb");
+        open_file = fopen(full_path, "rb");
     }
 
     if (open_file == NULL) {
@@ -226,8 +237,11 @@ bool check_file_name(const char *filename){
 
 } // can be used to check if the file is valid before sending it to the worker
 
-void create_go_directory(char * main_dir, char *dir_name[], char *clean_file_name, int size){
+char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_name, char *old_file_name, int size){
     // given the size traverse through each, add the first to a new string, first check if directory exists if not create it, then add a / and then the second one, and same thing.  
+
+    printf("main dir: %s\n", main_dir);
+    printf("clean file name: %s\n", clean_file_name);
 
     int size_of_dir = 0;
     for (int i = 0; dir_name[i] != NULL; i++) {
@@ -239,28 +253,44 @@ void create_go_directory(char * main_dir, char *dir_name[], char *clean_file_nam
 
     char *complete_directory = malloc(sizeof(char) * size_of_dir);
     strcpy(complete_directory, main_dir); // add the main directory 
+    strcat(complete_directory, "/");
 
-    struct stat st;
+    char temp_path[256];
+    strcpy(temp_path, main_dir);
+    
 
-    for (int i = 1; dir_name[i] != NULL; i++) {
-        strcat(complete_directory, dir_name[0]);
-        if (stat(dir_name[i],&st) == -1) {
-            if (mkdir(dir_name[i], 0755) == -1) {
+    for (int i = 0; dir_name[i] != NULL; i++) {
+        strcat(temp_path, "/");
+        strcat(temp_path, dir_name[i]);
+
+        struct stat st;
+        if (stat(temp_path,&st) == -1) {
+            if (mkdir(temp_path, 0755) == -1) {
                 perror("mkdir");
                 exit(1);
             }
         }
+        strcat(complete_directory, dir_name[i]);
         strcat(complete_directory, "/");
     }
 
     strcat(complete_directory, clean_file_name);
 
-    if (rename(clean_file_name, complete_directory) == -1) {
+    char *home_dir = malloc(sizeof(char) * (strlen(main_dir) + 1));
+    strcpy(home_dir, main_dir);
+
+    strcat(home_dir, "/");
+    strcat(home_dir, old_file_name);
+
+    printf("home dir: %s\n", home_dir);
+    printf("complete dir: %s\n", complete_directory);
+
+    if (rename(home_dir, complete_directory) == -1) {
         perror("rename");
         exit(1);
     }
 
-    return;
+    return complete_directory;
 
 }
 
@@ -271,7 +301,7 @@ void create_job(job_msg *job, const char *filename, int job_id) {
 
 void add_valid_file_to_array(char **valid_files, int *valid_file_count, int max_files, char *filename) {
      
-    if (valid_file_count >= max_files) {
+    if (*valid_file_count >= max_files) {
         
         int new_size = max_files * 2;
         char **error = realloc(valid_files, sizeof(char *) * (new_size+1));
@@ -285,7 +315,8 @@ void add_valid_file_to_array(char **valid_files, int *valid_file_count, int max_
         max_files = new_size;
     }
 
-    valid_files[*valid_file_count] = filename;
+    valid_files[*valid_file_count] = malloc(strlen(filename) + 1);
+    strcpy(valid_files[*valid_file_count], filename);
     (*valid_file_count)++;
     valid_files[*valid_file_count] = NULL;
 

@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define PATH_MAX 1024
 #define WORKER_COUNT 4
@@ -8,7 +11,7 @@
 
 #include "parentWorker.h"
 
-main (int argc, char **argv) {
+int main (int argc, char **argv) {
 
     int which_op = 0;
     char dir_to_use[PATH_MAX];
@@ -20,7 +23,7 @@ main (int argc, char **argv) {
 
     if (argc != 1) {
         fprintf(stderr, "Please provide the directory you want to use.");
-        return exit(1);
+        exit(1);
     }
     
     printf("Enter the directory to organize: ");
@@ -29,8 +32,8 @@ main (int argc, char **argv) {
     d = opendir(dir_to_use);
 
     if (d == NULL) {
-        fprintf(stderr, "Error opening directory: %s\n", strerror(errno));
-        return exit(1);
+        fprintf(stderr, "Error opening directory");
+        exit(1);
     }
 
     // go through the files in the given directoy, check if they are valid, and add them to the array
@@ -89,12 +92,14 @@ main (int argc, char **argv) {
             }
 
             // parent had opened the previously closed ends of the previous forked children 
-            for (int j = 0; j < WORKER_COUNT; j++) {
-                if (j != i) {
-                    if (close(job_pipe[j][0]) || close(job_pipe[j][1]) || close(result_pipe[j][0]) || close(result_pipe[j][1])) {
-                        perror("close");
-                        exit(1);
-                    }
+            for (int j = 1; j < i; j++) {
+                if (close(job_pipe[j][0])) {
+                    perror("close");
+                    exit(1);
+                }
+                if (close(result_pipe[j][1])) {
+                    perror("close");
+                    exit(1);
                 }
             }
 
@@ -106,22 +111,26 @@ main (int argc, char **argv) {
                 result_msg result;
                 char *clean_name = clean_filename(job.filename);
                 char **target_path = create_target_path(job.filename);
+                char *new_directory = create_go_directory(dir_to_use, target_path, clean_name, job.filename, sizeof(target_path));
+                char new_path[PATH_MAX];
+                strcpy(new_path, new_directory);
+
                 char *category = categorize_file(job.filename);
                 int lines;
                 int words;
 
                 if (strcmp(category, "plain text") == 0) {
-                    lines = count_lines(job.filename);
-                    words = count_words(job.filename);
+                    lines = count_lines(job.filename, dir_to_use);
+                    words = count_words(job.filename, dir_to_use);
                 } else {
                     lines = 0;
                     words = 0;
                 }
 
-                long size = count_size(job.filename, category);
+                long size = count_size(job.filename, category, dir_to_use);
 
                 // create the result struct to send back
-                create_result(&result, job.job_id, job.filename, clean_name, clean_name, target_path[0], category, lines, words, size);
+                create_result(&result, job.job_id, job.filename, clean_name, clean_name, new_path, category, lines, words, size);
 
                 // write the result back to the parent
                 if (write(result_pipe[i][1], &result, sizeof(result_msg)) == -1) {
@@ -236,5 +245,6 @@ main (int argc, char **argv) {
         }
     }
 
+    return 0;
 
 }

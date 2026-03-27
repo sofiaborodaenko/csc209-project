@@ -37,9 +37,8 @@ int main (int argc, char **argv) {
     }
 
     // go through the files in the given directoy, check if they are valid, and add them to the array
-
     while ((entry = readdir(d)) != NULL) {
-        // Skip "." (current directory) and ".." (parent directory)
+        // skip "." (current directory) and ".." (parent directory)
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
@@ -67,9 +66,7 @@ int main (int argc, char **argv) {
     }
 
     int each_worker = valid_file_count / WORKER_COUNT; // how many files each worker will process
-    printf("Each worker will process %d files.\n", each_worker);
-    int remaining_files = valid_file_count % WORKER_COUNT; // if there are any remaining 
-    printf("There are %d remaining files that will be distributed to the first few workers.\n", remaining_files);
+    int remaining_files = valid_file_count % WORKER_COUNT; // if there are any remaining
     int count = 0;
 
     int job_pipe[WORKER_COUNT][2]; // for the parents to send to the workers
@@ -106,12 +103,6 @@ int main (int argc, char **argv) {
             job_msg job;
 
             while (read(job_pipe[i][0], &job, sizeof(job_msg)) > 0) {
-                // printf("Worker %d received job: %s\n", i, job.filename);
-                // process the job and create the result
-                // if (job.filename[0] == '\0') {
-                //     break; // skip empty jobs
-                // }
-
                 result_msg result;
                 char *clean_name = clean_filename(job.filename);
                 char **target_path = create_target_path(job.filename);
@@ -153,56 +144,64 @@ int main (int argc, char **argv) {
 
              // parent had opened the previously closed ends of the previous forked children 
             for (int j = 1; j < i; j++) {
-                if (close(job_pipe[j][1])) {
-                    perror("close");
-                    exit(1);
+                if (job_pipe[j][1] != -1) {
+                    if(close(job_pipe[j][1])){
+                        perror("close");
+                        exit(1);
+                    }
+                    job_pipe[j][1] = -1; // mark as closed
                 }
 
                 // closes the reading end of the result pipe (only writes)
-                if (close(result_pipe[j][0])) {
+                if (result_pipe[j][0] != -1) {
+                    if(close(result_pipe[j][0])){
+                        perror("close");
+                        exit(1);
+                    }
+                    result_pipe[j][0] = -1; // mark as closed
+                }
+            }
+            
+            if (job_pipe[i][0] != -1) {
+                if(close(job_pipe[i][0])){
                     perror("close");
                     exit(1);
                 }
-                // close(job_pipe[j][0])
-                // close(job_pipe[j][1]);   
-                // close(result_pipe[j][0]); 
-                // close(result_pipe[j][1])
+                job_pipe[i][0] = -1; // mark as closed
             }
-        
-            if (close(job_pipe[i][0])) {
-                perror("close");
-                exit(1);
-            }
-            if (close(result_pipe[i][1])) {
-                perror("close");
-                exit(1);
+
+            if (result_pipe[i][1] != -1) {
+                if(close(result_pipe[i][1])){
+                    perror("close");
+                    exit(1);
+                }
+                result_pipe[i][1] = -1; // mark as closed
             }
         
             exit(0);
         } else { // parents proccess
             // closes the reading end of the job pipe (only writes)
-            if (close(job_pipe[i][0])) {
-                perror("close");
-                exit(1);
+            if (job_pipe[i][0] != -1) {
+                if (close(job_pipe[i][0])) {
+                    perror("close");
+                    exit(1);
+                }
+                job_pipe[i][0] = -1; // mark as closed
             }
 
             // closes the writing end of the result pipe (only reads)
-            if (close(result_pipe[i][1])) {
-                perror("close");
-                exit(1);
+            if (result_pipe[i][1] != -1) {
+                if (close(result_pipe[i][1])) {
+                    perror("close");
+                    exit(1);
+                }
+                result_pipe[i][1] = -1; // mark as closed
             }
 
             // write to the worker based on the allocated number of files for each
             for (int j = 0; j < each_worker; j++) {
                 job_msg job;
-
-                // if (count >= valid_file_count) {
-                //     // send termination job
-                //     job_msg end_job;
-                //     end_job.filename[0] = '\0';
-                //     write(job_pipe[i][1], &end_job, sizeof(job_msg));
-                //     // break; // no more valid files to assign
-                // }
+                
                 create_job(&job, valid_files[count], i);
                 count++;
 
@@ -228,7 +227,13 @@ int main (int argc, char **argv) {
                 }
             }
 
-            close(job_pipe[i][1]); // close the writing end after sending all jobs to the worker
+            if (job_pipe[i][1] != -1) {
+                if (close(job_pipe[i][1])) {
+                    perror("close");
+                    exit(1);
+                }
+                job_pipe[i][1] = -1; // mark as closed
+            }
 
 
         }
@@ -300,6 +305,7 @@ int main (int argc, char **argv) {
                         result_count++;
                     }
 
+
                 } else {
                     // pipe closed means worker done
                     close(fd);
@@ -308,6 +314,8 @@ int main (int argc, char **argv) {
                 }
             }
         }
+
+        original_filenames[result_count] = NULL; // null terminate the arrays
     }
 
     for (int i = 0; i < WORKER_COUNT; i++) {

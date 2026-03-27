@@ -43,27 +43,21 @@ void create_result(result_msg *result, int job_id, char *original_name, char *cl
 
 // cleans up the filename 
 char *clean_filename(char *filename) {
-    // find the first occurence of the underscore, and subtract that from the entire filename, then use the find char function to find the first . and store that in a seperate variable, concatinate the two and return 
 
     char *first_underscore = strchr(filename, '_'); // find the first occurence of the underscore
     char *period = strchr(filename, '.'); // find the first occurence of the period (file extension)
 
-    // printf("first underscore: %s\n", first_underscore);
-    // printf("period: %s\n", period);
-
     int diff = strlen(filename) - strlen(first_underscore) ; // find length of the filename 
-
-    // printf("diff: %d\n", diff);
 
     char *clean_name = malloc(sizeof(char) * (diff + strlen(period) + 1));
     strncpy(clean_name, filename, diff);
-    // clean_name[diff] = '\0'; // null terminate the string
     strcat(clean_name, period);
     return clean_name;
 
 }
 
 char **create_target_path(char *filename) {
+
     char *copy = malloc(strlen(filename) + 1); // for the test with string literals 
     strcpy(copy, filename);
 
@@ -71,8 +65,6 @@ char **create_target_path(char *filename) {
     int n = 0;
 
     char *tok = strtok(copy, "_."); // break up the filename by _ and . and store in the array
-
-   // printf("filename: %s\n", tok);
 
     while (tok != NULL) {
         tokens[n++] = tok;
@@ -96,8 +88,7 @@ char **create_target_path(char *filename) {
 
 
 char *categorize_file(char *filename){
-    // find where the period is using the find char function, and then check if the text matches a buncnh of options, can either have set arrays for each category, so text array would contain pdf or txt and if it matches that then set category to text and return, or just have a bunch of orr statements but that seems like hardcoding 
-
+    
     char *file_extension = strrchr(filename, '.') + 1; // find the file extension 
 
     char *text_extensions[] = {TEXT_EXTENSIONS, NULL};
@@ -127,7 +118,6 @@ char *categorize_file(char *filename){
 }
 
 int count_lines(char *filename, char *home_directory){
-    // check if the category is a text, would need to call the above function, if yes then open the file, read fgets until the end while counting the number of lines, close the file
 
     char * full_path = malloc(strlen(home_directory) + strlen(filename) + 2); // for the slash and null terminator
     sprintf(full_path, "%s/%s", home_directory, filename);
@@ -154,7 +144,6 @@ int count_lines(char *filename, char *home_directory){
 
 
 int count_words(char *filename, char *home_directory){
-    // check if categoy is a text, then use fscanf and fscanf(f, "%99s", word) == 1 then add it to a counter 
 
     char *full_path = malloc(strlen(home_directory) + strlen(filename) + 2); // for the slash and null terminator
     sprintf(full_path, "%s/%s", home_directory, filename);
@@ -217,16 +206,15 @@ long count_size(char *filename, char *category, char *home_directory) {
 }
 
 bool check_file_name(const char *filename){
-    // check if file contains at least one underscore and exactly one period + no whitespace characters 
-    
+
     // whitespace characters to check
     const char *whitespace_chars = " \t\n\r\v\f";
-    
+
     if (strchr(filename, '_') == NULL) {
         return false; // no underscore found
     }
 
-    char *period = strrchr(filename, '.'); // find one occurence 
+    char *period = strchr(filename, '.'); // find first period
 
     if (period == NULL) {
         return false; // no period found
@@ -247,10 +235,6 @@ bool check_file_name(const char *filename){
 } // can be used to check if the file is valid before sending it to the worker
 
 char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_name, char *old_file_name){
-    // given the size traverse through each, add the first to a new string, first check if directory exists if not create it, then add a / and then the second one, and same thing.  
-
-   // printf("main dir: %s\n", main_dir);
-    // printf("clean file name: %s\n", clean_file_name);
 
     int size_of_dir = 0;
     for (int i = 0; dir_name[i] != NULL; i++) {
@@ -287,9 +271,6 @@ char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_nam
 
     char *home_dir = malloc(strlen(main_dir) + 1 + strlen(old_file_name) + 1);
     sprintf(home_dir, "%s/%s", main_dir, old_file_name);
-
-    //printf("home dir: %s\n", home_dir);
-    // printf("complete dir: %s\n", complete_directory);
 
     if (rename(home_dir, complete_directory) == -1) {
         perror("rename");
@@ -330,12 +311,11 @@ void add_valid_file_to_array(char **valid_files, int *valid_file_count, int max_
 }
 
 
-void print_summary(char *original_filenames[], char *clean_filenames[], char **target_paths[], char *categorys[], int lines[], int words[], long sizes[], int num_files) {
-    // print a nicley formated summary given all of the details 
+void print_summary(char *original_filenames[], char *clean_filenames[], char *target_paths[], char *categorys[], int lines[], int words[], long sizes[], int num_files) {
 
     printf("-------------------------------\n");
     printf("FILE ORGANIZATION SUMMARY \n");
-    printf("-------------------------------\n");
+    printf("-------------------------------\n\n");
 
     int category_counts[4] = {0, 0, 0, 0}; // 0 = plain text, 1 = document, 2 = audio/video, 3 = other
 
@@ -346,7 +326,7 @@ void print_summary(char *original_filenames[], char *clean_filenames[], char **t
         printf("%s", original_filenames[i]);
         printf(" -> %s", clean_filenames[i]);
         printf(" (%ld bytes)", sizes[i]);
-        // printf(" -> %s", target_paths[i]);
+        printf(" -> %s", target_paths[i]);
         printf("\n");
 
         if (strcmp(categorys[i], "plain text") == 0) {

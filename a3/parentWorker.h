@@ -33,13 +33,13 @@ int count_lines(char *filename, char *home_directory);
 int count_words(char *filename, char *home_directory);
 long count_size(char *filename, char *category, char *home_directory);
 
-bool check_file_name(const char *filename); // can be used to check if the file is valid before sending it to the worker
+bool check_file_name(const char *filename); // used to check if the file is valid before sending it to the worker
 void add_valid_file_to_array(char **valid_files, int *valid_file_count, int max_files, char *filename); // add the valid file to an array that the parent will send to the workers
 char *create_go_directory(char * main_dir, char *dir_name[], char *clean_file_name, char *old_file_name);
 
 // parent functions
 void create_job(job_msg *job, const char *filename, int job_id);
-void print_summary(char *original_filenames[], char *clean_filenames[], char **target_paths[], char *categorys[], int lines[], int words[], long sizes[], int num_files);
+void print_summary(char *original_filenames[], char *clean_filenames[], char *target_paths[], char *categorys[], int lines[], int words[], long sizes[], int num_files);
 
 
 #endif

@@ -51,6 +51,7 @@ char *clean_filename(char *filename) {
 
     char *clean_name = malloc(sizeof(char) * (diff + strlen(period) + 1));
     strncpy(clean_name, filename, diff);
+    clean_name[diff] = '\0';
     strcat(clean_name, period);
     return clean_name;
 
@@ -88,7 +89,7 @@ char **create_target_path(char *filename) {
 
 
 char *categorize_file(char *filename){
-    
+
     char *file_extension = strrchr(filename, '.') + 1; // find the file extension 
 
     char *text_extensions[] = {TEXT_EXTENSIONS, NULL};
@@ -138,6 +139,7 @@ int count_lines(char *filename, char *home_directory){
     }
 
     fclose(open_file);
+    free(full_path);
     return lines;
 
 }
@@ -164,6 +166,7 @@ int count_words(char *filename, char *home_directory){
 
     fclose(open_file);
     free(word);
+    free(full_path);
     return words;
 }
 
@@ -201,6 +204,7 @@ long count_size(char *filename, char *category, char *home_directory) {
     }
 
     fclose(open_file);
+    free(full_path);
     return size;
 
 }
@@ -313,14 +317,15 @@ void add_valid_file_to_array(char **valid_files, int *valid_file_count, int max_
 
 void print_summary(char *original_filenames[], char *clean_filenames[], char *target_paths[], char *categorys[], int lines[], int words[], long sizes[], int num_files) {
 
-    printf("-------------------------------\n");
+    printf("-----------------------------------------------------------\n");
     printf("FILE ORGANIZATION SUMMARY \n");
-    printf("-------------------------------\n\n");
+    printf("-----------------------------------------------------------\n\n");
 
     int category_counts[4] = {0, 0, 0, 0}; // 0 = plain text, 1 = document, 2 = audio/video, 3 = other
 
     int total_lines = 0;
     int total_words = 0;
+
 
     for (int i = 0; original_filenames[i] != NULL; i++) {
         printf("%s", original_filenames[i]);
@@ -344,9 +349,9 @@ void print_summary(char *original_filenames[], char *clean_filenames[], char *ta
     }
 
     printf("\n");
-    printf("-------------------------------\n");
+    printf("-----------------------------------------------------------\n");
     printf("Statistics \n");
-    printf("-------------------------------\n");
+    printf("-----------------------------------------------------------\n");
 
     printf("Files processed: %d \n", num_files);
     printf("Plain text files: %d \n", category_counts[0]);

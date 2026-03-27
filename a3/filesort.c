@@ -12,9 +12,9 @@
 #include "parentWorker.h"
 
 
+
 int main (int argc, char **argv) {
 
-    int which_op = 0;
     char dir_to_use[PATH_MAX];
     DIR *d;
     struct dirent *entry; // to hold the current file in the directory
@@ -29,6 +29,7 @@ int main (int argc, char **argv) {
     
     printf("Enter the directory to organize: ");
     scanf("%s", dir_to_use);
+    printf("\n");
 
     d = opendir(dir_to_use);
 
@@ -65,10 +66,6 @@ int main (int argc, char **argv) {
         free(valid_files);
         return 0;
     }
-
-    int each_worker = valid_file_count / WORKER_COUNT; // how many files each worker will process
-    int remaining_files = valid_file_count % WORKER_COUNT; // if there are any remaining
-    int count = 0;
 
     int job_pipe[WORKER_COUNT][2]; // for the parents to send to the workers
     int result_pipe[WORKER_COUNT][2]; // for the workers to send back to the parent
@@ -180,7 +177,9 @@ int main (int argc, char **argv) {
             }
         
             exit(0);
+
         } else { // parents proccess
+
             // closes the reading end of the job pipe (only writes)
             if (job_pipe[i][0] != -1) {
                 if (close(job_pipe[i][0])) {
@@ -199,49 +198,26 @@ int main (int argc, char **argv) {
                 result_pipe[i][1] = -1; // mark as closed
             }
 
-            // write to the worker based on the allocated number of files for each
-            for (int j = 0; j < each_worker; j++) {
-                job_msg job;
-                
-                create_job(&job, valid_files[count], i);
-                count++;
-
-                if (write(job_pipe[i][1], &job, sizeof(job_msg)) == -1) {
-                    perror("write");
-                    exit(1);
-                }
-            }
-
-            // write the remaining files to the first few workers
-            for (int j = 0; j < remaining_files; j++) {
-                if (i < remaining_files) {
-                    if (count >= valid_file_count) {
-                        break; // no more valid files to assign
-                    }
-                    job_msg job;
-                    create_job(&job, valid_files[count], i);
-                    count++;
-                    if (write(job_pipe[i][1], &job, sizeof(job_msg)) == -1) {
-                        perror("write");
-                        exit(1);
-                    }
-                }
-            }
-
-            if (job_pipe[i][1] != -1) {
-                if (close(job_pipe[i][1])) {
-                    perror("close");
-                    exit(1);
-                }
-                job_pipe[i][1] = -1; // mark as closed
-            }
-
-
         }
 
+    } // only the parent gets here
+
+    // parent distributes all jobs round robin style
+    for (int i = 0; i < valid_file_count; i++) {
+        int worker = i % WORKER_COUNT;
+        job_msg job;
+        create_job(&job, valid_files[i], worker);
+        
+        if (write(job_pipe[worker][1], &job, sizeof(job_msg)) == -1) {
+            perror("write"); exit(1);
+        }
     }
 
-    // only the parent gets here
+    // close all write ends so workers get EOF and exit
+    for (int i = 0; i < WORKER_COUNT; i++) {
+        close(job_pipe[i][1]); job_pipe[i][1] = -1;
+    }
+    
     result_msg result;
 
     char *original_filenames[valid_file_count];
@@ -295,6 +271,7 @@ int main (int argc, char **argv) {
                     if (result_count < valid_file_count) {
                         printf("Parent got result from worker %d: %s\n",
                             i, result.original_name);
+
                         //store the result in the arrays to print the summary later
                         original_filenames[result_count] = strdup(result.original_name);
                         clean_filenames[result_count] = strdup(result.clean_name);
@@ -305,7 +282,6 @@ int main (int argc, char **argv) {
                         sizes[result_count] = result.size;
                         result_count++;
                     }
-
 
                 } else {
                     // pipe closed means worker done
@@ -331,7 +307,23 @@ int main (int argc, char **argv) {
         }
     }
 
+    printf("\n");
     print_summary(original_filenames, clean_filenames, target_paths, categories, lines, words, sizes, result_count);
+
+    // clean up the allocated memory for the result arrays
+    for (int i = 0; i < result_count; i++) {
+        free(original_filenames[i]);
+        free(clean_filenames[i]);
+        free(target_paths[i]);
+        free(categories[i]);
+    }
+
+    // clean up the allocated memory for the valid files array
+    for (int i = 0; i < valid_file_count; i++) {
+        free(valid_files[i]);
+    }
+
+    free(valid_files);
 
     return 0;
 

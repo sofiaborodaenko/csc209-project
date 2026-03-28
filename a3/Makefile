@@ -1,9 +1,9 @@
 FLAGS = -Wall -g
 DEPENDENCIES = parentWorker.h
 
-all: a3
+all: filesort
 
-a3: implementation.o filesort.o
+filesort: implementation.o filesort.o
 	gcc ${FLAGS} -o $@ $^
 
 test.o: test.c parentWorker.h

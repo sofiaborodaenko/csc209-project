@@ -34,7 +34,8 @@ int main (int argc, char **argv) {
     d = opendir(dir_to_use);
 
     if (d == NULL) {
-        fprintf(stderr, "Error opening directory");
+        fprintf(stderr, "Unable to open directory");
+        free(valid_files);
         exit(1);
     }
 
@@ -52,8 +53,9 @@ int main (int argc, char **argv) {
         // checks if its a regular file
         if (entry->d_type == DT_REG) {
             if (check_file_name(entry->d_name)) {
+                int max_files = MAX_FILES;
                 // add to the array of valid files
-                add_valid_file_to_array(valid_files, &valid_file_count, MAX_FILES, entry->d_name);
+                add_valid_file_to_array(&valid_files, &valid_file_count, &max_files, entry->d_name);
             
             }
         }
@@ -124,12 +126,18 @@ int main (int argc, char **argv) {
                 strcpy(new_path, new_directory);
 
                 // create the result struct to send back
-                create_result(&result, job.job_id, job.filename, clean_name, clean_name, new_path, category, lines, words, size);
+                create_result(&result, job.job_id, job.filename, clean_name, new_path, category, lines, words, size);
 
                 // write the result back to the parent
                 if (write(result_pipe[i][1], &result, sizeof(result_msg)) == -1) {
-                    perror("write");
-                    exit(1);
+                    fprintf(stderr, "Worker %d: skipping %s: %s\n", i, job.filename, strerror(errno));
+                    free(clean_name);
+                    for (int k = 0; target_path[k] != NULL; k++) {
+                        free(target_path[k]);
+                    }
+                    free(target_path);
+                    free(new_directory);
+                    continue;
                 }
 
                 // free allocated memory after writing to 
@@ -141,7 +149,7 @@ int main (int argc, char **argv) {
             }
 
              // parent had opened the previously closed ends of the previous forked children 
-            for (int j = 1; j < i; j++) {
+            for (int j = 0; j < i; j++) {
                 if (job_pipe[j][1] != -1) {
                     if(close(job_pipe[j][1])){
                         perror("close");
@@ -209,7 +217,9 @@ int main (int argc, char **argv) {
         create_job(&job, valid_files[i], worker);
         
         if (write(job_pipe[worker][1], &job, sizeof(job_msg)) == -1) {
-            perror("write"); exit(1);
+            fprintf(stderr, "Parent: skipping %s, failed to send to worker %d: %s\n", 
+            valid_files[i], worker, strerror(errno));
+            continue;
         }
     }
 

@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "parentWorker.h"
 
@@ -26,12 +27,11 @@
 "mp3", "aac", "ogg", "wav", "flac", "alac", "m4a", "opus", "wma", "aiff", "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "mpeg", "mpg", "m4v"
 
 
-void create_result(result_msg *result, int job_id, char *original_name, char *clean_name, char *target_name, char *target_path, char *category, int lines, int words, long size) {
+void create_result(result_msg *result, int job_id, char *original_name, char *clean_name, char *target_path, char *category, int lines, int words, long size) {
 
     result->job_id = job_id;
     strcpy(result->original_name, original_name);
     strcpy(result->clean_name, clean_name);
-    strcpy(result->target_name, target_name);
     strcpy(result->target_path, target_path);
     strcpy(result->category, category);
     result->lines = lines;
@@ -123,15 +123,17 @@ int count_lines(char *filename, char *home_directory){
     char * full_path = malloc(strlen(home_directory) + strlen(filename) + 2); // for the slash and null terminator
     sprintf(full_path, "%s/%s", home_directory, filename);
     
+    int lines = 0;
 
     FILE *open_file = fopen(full_path, "r");
 
     if (open_file == NULL) {
-        perror("fopen");
-        exit(1);
+        fprintf(stderr, "Worker: failed to open %s for counting lines: %s\n", full_path, strerror(errno));
+        free(full_path);
+        return 0;
     }
 
-    int lines = 0;
+    
     char buffer[1024]; // buffer to hold each line
 
     while (fgets(buffer, sizeof(buffer), open_file) != NULL) {
@@ -153,8 +155,9 @@ int count_words(char *filename, char *home_directory){
     FILE *open_file = fopen(full_path, "r");
 
     if (open_file == NULL) {
-        perror("fopen");
-        exit(1);
+        fprintf(stderr, "Worker: failed to open %s for counting words: %s\n", full_path, strerror(errno));
+        free(full_path);
+        return 0;
     }
 
     int words = 0;
@@ -185,8 +188,9 @@ long count_size(char *filename, char *category, char *home_directory) {
     }
 
     if (open_file == NULL) {
-        perror("fopen");
-        exit(1);
+        fprintf(stderr, "Worker: failed to open %s for counting size: %s\n", full_path, strerror(errno));
+        free(full_path);
+        return -1;
     }
 
     if (fseek(open_file, 0, SEEK_END) == -1) {
@@ -200,6 +204,7 @@ long count_size(char *filename, char *category, char *home_directory) {
     if (size == -1) {
         perror("ftell");
         fclose(open_file);
+        free(full_path);
         return -1;
     }
 
@@ -277,7 +282,9 @@ char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_nam
     sprintf(home_dir, "%s/%s", main_dir, old_file_name);
 
     if (rename(home_dir, complete_directory) == -1) {
-        perror("rename");
+        fprintf(stderr, "Worker: failed to move %s to %s: %s\n", home_dir, complete_directory, strerror(errno));
+        free(home_dir);
+        free(complete_directory);
         exit(1);
     }
 
@@ -290,26 +297,26 @@ void create_job(job_msg *job, const char *filename, int job_id) {
     strcpy(job->filename, filename);
 }
 
-void add_valid_file_to_array(char **valid_files, int *valid_file_count, int max_files, char *filename) {
+void add_valid_file_to_array(char ***valid_files, int *valid_file_count, int *max_files, char *filename) {
      
-    if (*valid_file_count >= max_files) {
+    if (*valid_file_count >= *max_files) {
         
-        int new_size = max_files * 2;
-        char **error = realloc(valid_files, sizeof(char *) * (new_size+1));
+        int new_size = *max_files * 2;
+        char **error = realloc(*valid_files, sizeof(char *) * (new_size+1));
 
         if (error == NULL) {
             perror("realloc");
             exit(1);
         }
 
-        valid_files = error;
-        max_files = new_size;
+        *valid_files = error;
+        *max_files = new_size;
     }
 
-    valid_files[*valid_file_count] = malloc(strlen(filename) + 1);
-    strcpy(valid_files[*valid_file_count], filename);
+    (*valid_files)[*valid_file_count] = malloc(strlen(filename) + 1);
+    strcpy((*valid_files)[*valid_file_count], filename);
     (*valid_file_count)++;
-    valid_files[*valid_file_count] = NULL;
+    (*valid_files)[*valid_file_count] = NULL;
 
     return;
 }

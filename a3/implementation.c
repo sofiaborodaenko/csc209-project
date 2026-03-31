@@ -290,6 +290,7 @@ char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_nam
         exit(1);
     }
 
+    free(home_dir);
     return complete_directory;
 
 }

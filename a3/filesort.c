@@ -40,6 +40,8 @@ int main (int argc, char **argv) {
     }
 
     // go through the files in the given directoy, check if they are valid, and add them to the array
+    int max_files = MAX_FILES;
+
     while ((entry = readdir(d)) != NULL) {
         // skip "." (current directory) and ".." (parent directory)
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
@@ -53,7 +55,6 @@ int main (int argc, char **argv) {
         // checks if its a regular file
         if (entry->d_type == DT_REG) {
             if (check_file_name(entry->d_name)) {
-                int max_files = MAX_FILES;
                 // add to the array of valid files
                 add_valid_file_to_array(&valid_files, &valid_file_count, &max_files, entry->d_name);
             
@@ -104,6 +105,9 @@ int main (int argc, char **argv) {
 
             while (read(job_pipe[i][0], &job, sizeof(job_msg)) > 0) {
                 result_msg result;
+                // initialize the result struct to all 0s and NULLs to avoid garbage values
+                memset(&result, 0, sizeof(result_msg));  
+
                 char *clean_name = clean_filename(job.filename);
                 char **target_path = create_target_path(job.filename);
 
@@ -214,6 +218,8 @@ int main (int argc, char **argv) {
     for (int i = 0; i < valid_file_count; i++) {
         int worker = i % WORKER_COUNT;
         job_msg job;
+        // initialize the job struct to all 0s and NULLs to avoid garbage values
+        memset(&job, 0, sizeof(job_msg));
         create_job(&job, valid_files[i], worker);
         
         if (write(job_pipe[worker][1], &job, sizeof(job_msg)) == -1) {
@@ -227,8 +233,6 @@ int main (int argc, char **argv) {
     for (int i = 0; i < WORKER_COUNT; i++) {
         close(job_pipe[i][1]); job_pipe[i][1] = -1;
     }
-    
-    result_msg result;
 
     char *original_filenames[valid_file_count];
     char *clean_filenames[valid_file_count];

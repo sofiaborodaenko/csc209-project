@@ -267,9 +267,11 @@ char *create_go_directory(char *main_dir, char *dir_name[], char *clean_file_nam
 
         struct stat st;
         if (stat(temp_path,&st) == -1) {
-            if (mkdir(temp_path, 0755) == -1) {
-                perror("mkdir");
-                exit(1);
+            if (mkdir(temp_path, 0755) == -1 && errno != EEXIST) {
+                    perror("mkdir");
+                    free(complete_directory);
+                    exit(1);
+                
             }
         }
         strcat(complete_directory, dir_name[i]);
